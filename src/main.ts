@@ -18,6 +18,6 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new AllExceptionsFilter());
-  await app.listen(process.env.PORT ?? 3800);
+  await app.listen(process.env.PORT ?? 3080);
 }
 bootstrap();
