@@ -16,6 +16,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /usr/src/app/dist ./dist
+RUN npx prisma generate
 COPY --from=builder /usr/src/app/prisma ./prisma
 
 EXPOSE 3000
