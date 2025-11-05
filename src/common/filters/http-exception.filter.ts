@@ -5,7 +5,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { ApiResponse } from '../dto/response.dto';
 import { BaseException } from '../exceptions/base.exception';
 
