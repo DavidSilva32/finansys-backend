@@ -11,12 +11,16 @@ export class AuthController extends BaseController {
 
   @Post('register')
   async register(@Body() dto: RegisterDto) {
-    const user = await this.authService.register(dto.name, dto.email, dto.password);
+    const user = await this.authService.register(
+      dto.name,
+      dto.email,
+      dto.password,
+    );
     const safeUser = { id: user.id, email: user.email };
     const token = await this.authService.generateToken(safeUser);
 
     return this.createResponse(
-      { user: { id: user.id, name: user.name, email: user.email }, token},
+      { user: { id: user.id, name: user.name, email: user.email }, token },
       'User registered successfully',
       201,
     );
@@ -31,7 +35,7 @@ export class AuthController extends BaseController {
     return this.createResponse(
       {
         user: { id: user.id, name: user.name, email: user.email },
-        token
+        token,
       },
       'Login successful',
       200,
