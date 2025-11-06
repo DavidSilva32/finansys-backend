@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { BaseController } from 'src/common/controller/base.controller';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { LoginDto, RefreshDto, RegisterDto } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController extends BaseController {
@@ -17,10 +17,10 @@ export class AuthController extends BaseController {
       dto.password,
     );
     const safeUser = { id: user.id, email: user.email };
-    const token = await this.authService.generateToken(safeUser);
+    const tokens = await this.authService.generateTokens(safeUser);
 
     return this.createResponse(
-      { user: { id: user.id, name: user.name, email: user.email }, token },
+      { user: { id: user.id, name: user.name, email: user.email }, tokens },
       'User registered successfully',
       201,
     );
@@ -30,15 +30,24 @@ export class AuthController extends BaseController {
   async login(@Body() dto: LoginDto) {
     const user = await this.authService.validateUser(dto.email, dto.password);
     const safeUser = { id: user.id, email: user.email };
-    const token = await this.authService.generateToken(safeUser);
+    const tokens = await this.authService.generateTokens(safeUser);
 
     return this.createResponse(
       {
         user: { id: user.id, name: user.name, email: user.email },
-        token,
+        tokens,
       },
       'Login successful',
       200,
     );
+  }
+
+  @Post('refresh')
+  async refresh(@Body() dto: RefreshDto) {
+    const tokens = await this.authService.refreshTokens(
+      dto.userId,
+      dto.refreshToken,
+    );
+    return this.createResponse({ tokens }, 'Refresh tokens successful', 200);
   }
 }

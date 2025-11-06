@@ -10,7 +10,10 @@ import {
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwtService: JwtService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
   async register(name: string, email: string, password: string) {
     if (!name || !email || !password) {
@@ -19,7 +22,9 @@ export class AuthService {
       );
     }
 
-    const existingUser = await this.prisma.user.findUnique({ where: { email } });
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
     if (existingUser) {
       throw new ConflictExceptionCustom('User with this email already exists');
     }
@@ -41,8 +46,53 @@ export class AuthService {
     return user;
   }
 
-  async generateToken(user: { id: string; email: string }) {
+  async generateTokens(user: { id: string; email: string }) {
     const payload = { sub: user.id, email: user.email };
-    return this.jwtService.sign(payload);
+
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: '15m',
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: '7d',
+    });
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    return { accessToken, refreshToken };
+  }
+
+  async refreshTokens(userId: string, refreshToken: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user || !user.refreshToken || user.refreshToken !== refreshToken) {
+      throw new BadRequestExceptionCustom('Invalid refresh token');
+    }
+
+    try {
+      this.jwtService.verify(refreshToken);
+
+      const accessToken = this.jwtService.sign(
+        { sub: user.id, email: user.email },
+        { expiresIn: '15m' },
+      );
+      
+      const newRefreshToken = this.jwtService.sign(
+        { sub: user.id, email: user.email },
+        { expiresIn: '7d' },
+      );
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken: newRefreshToken },
+      });
+
+      return { accessToken, refreshToken: newRefreshToken };
+    } catch (err) {
+      throw new BadRequestExceptionCustom('Refresh token expired or invalid');
+    }
   }
 }

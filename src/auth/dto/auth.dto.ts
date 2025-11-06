@@ -22,4 +22,14 @@ class LoginDto {
   password: string;
 }
 
-export { RegisterDto, LoginDto };
+class RefreshDto {
+  @IsNotEmpty()
+  @IsString()
+  userId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  refreshToken: string;
+}
+
+export { RegisterDto, LoginDto, RefreshDto };
