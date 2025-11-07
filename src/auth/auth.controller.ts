@@ -11,11 +11,7 @@ export class AuthController extends BaseController {
 
   @Post('register')
   async register(@Body() dto: RegisterDto) {
-    const user = await this.authService.register(
-      dto.name,
-      dto.email,
-      dto.password,
-    );
+    const user = await this.authService.register(dto);
     const safeUser = { id: user.id, email: user.email };
     const tokens = await this.authService.generateTokens(safeUser);
 
@@ -28,7 +24,7 @@ export class AuthController extends BaseController {
 
   @Post('login')
   async login(@Body() dto: LoginDto) {
-    const user = await this.authService.validateUser(dto.email, dto.password);
+    const user = await this.authService.validateUser(dto);
     const safeUser = { id: user.id, email: user.email };
     const tokens = await this.authService.generateTokens(safeUser);
 
@@ -44,10 +40,7 @@ export class AuthController extends BaseController {
 
   @Post('refresh')
   async refresh(@Body() dto: RefreshDto) {
-    const tokens = await this.authService.refreshTokens(
-      dto.userId,
-      dto.refreshToken,
-    );
+    const tokens = await this.authService.refreshTokens(dto);
     return this.createResponse({ tokens }, 'Refresh tokens successful', 200);
   }
 }
