@@ -10,9 +10,13 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 export class TransactionsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateTransactionDto) {
-    return await this.prisma.transaction.create({ data: dto });
-  }
+async create(dto: CreateTransactionDto) {
+  const dateISO = new Date(dto.date).toISOString();
+  return await this.prisma.transaction.create({
+    data: { ...dto, date: dateISO },
+  });
+}
+
 
   async findAll(filter: FilterTransactionsDto & { userId: string }) {
     const where: any = { userId: filter.userId };
