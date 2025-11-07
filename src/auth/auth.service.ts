@@ -17,32 +17,32 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<User> {
-    if (!registerDto.name || !registerDto.email || !registerDto.password) {
+  async register(dto: RegisterDto): Promise<User> {
+    if (!dto.name || !dto.email || !dto.password) {
       throw new BadRequestExceptionCustom(
         'Name, email and password are required',
       );
     }
 
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: registerDto.email },
+      where: { email: dto.email },
     });
     if (existingUser) {
       throw new ConflictExceptionCustom('User with this email already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
     return this.prisma.user.create({
-      data: { name: registerDto.name, email: registerDto.email, password: hashedPassword },
+      data: { name: dto.name, email: dto.email, password: hashedPassword },
     });
   }
 
-  async validateUser(loginDto: LoginDto): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { email: loginDto.email } });
+  async validateUser(dto: LoginDto): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user || !user.password)
       throw new NotFoundExceptionCustom('User not found');
 
-    const isValid = await bcrypt.compare(loginDto.password, user.password);
+    const isValid = await bcrypt.compare(dto.password, user.password);
     if (!isValid) throw new BadRequestExceptionCustom('Invalid credentials');
 
     return user;
@@ -67,15 +67,15 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async refreshTokens(refreshDto: RefreshDto) {
-    const user = await this.prisma.user.findUnique({ where: { id: refreshDto.userId } });
+  async refreshTokens(dto: RefreshDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
 
-    if (!user || !user.refreshToken || user.refreshToken !== refreshDto.refreshToken) {
+    if (!user || !user.refreshToken || user.refreshToken !== dto.refreshToken) {
       throw new BadRequestExceptionCustom('Invalid refresh token');
     }
 
     try {
-      this.jwtService.verify(refreshDto.refreshToken);
+      this.jwtService.verify(dto.refreshToken);
 
       const accessToken = this.jwtService.sign(
         { sub: user.id, email: user.email },
