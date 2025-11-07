@@ -1,9 +1,20 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, IsDateString } from 'class-validator';
-import { TransactionType } from '@prisma/client';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsDateString,
+} from 'class-validator';
+import { TransactionStatus, TransactionType } from '@prisma/client';
 
 export class CreateTransactionDto {
   @IsEnum(TransactionType)
   type: TransactionType;
+
+  @IsEnum(TransactionStatus)
+  status: TransactionStatus;
 
   @IsString()
   @IsNotEmpty()
