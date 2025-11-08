@@ -5,20 +5,23 @@ import { FilterTransactionsDto } from './dto/filter-transactions.dto';
 import { NotFoundExceptionCustom } from 'src/common/exceptions/base.exception';
 import { Transaction } from '@prisma/client';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { TransactionOutput } from 'src/types/transaction-output';
 
 @Injectable()
 export class TransactionsService {
   constructor(private prisma: PrismaService) {}
 
-async create(dto: CreateTransactionDto) {
-  const dateISO = new Date(dto.date).toISOString();
-  return await this.prisma.transaction.create({
-    data: { ...dto, date: dateISO },
-  });
-}
+  async create(dto: CreateTransactionDto): Promise<TransactionOutput> {
+    const dateISO = new Date(dto.date).toISOString();
+    const transaction = await this.prisma.transaction.create({
+      data: { ...dto, date: dateISO },
+    });
+    return this.formatTransaction(transaction);
+  }
 
-
-  async findAll(filter: FilterTransactionsDto & { userId: string }) {
+  async findAll(
+    filter: FilterTransactionsDto & { userId: string },
+  ): Promise<TransactionOutput[]> {
     const where: any = { userId: filter.userId };
 
     if (filter.type) where.type = filter.type;
@@ -43,25 +46,43 @@ async create(dto: CreateTransactionDto) {
       if (filter.maxAmount) where.amount.lte = filter.maxAmount;
     }
 
-    return await this.prisma.transaction.findMany({
+    const transactions = await this.prisma.transaction.findMany({
       where,
       orderBy: { date: 'desc' },
     });
+
+    return transactions.map(this.formatTransaction);
   }
 
-  async findOne(id: string): Promise<Transaction> {
+  async findOne(id: string): Promise<TransactionOutput> {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id },
     });
-    if (!transaction) throw new NotFoundExceptionCustom('Transction not found');
-    return transaction;
+    if (!transaction)
+      throw new NotFoundExceptionCustom('Transaction not found');
+    return this.formatTransaction(transaction);
   }
 
-  async update(id: string, dto: UpdateTransactionDto) {
-    return await this.prisma.transaction.update({ where: { id }, data: dto });
+  async update(
+    id: string,
+    dto: UpdateTransactionDto,
+  ): Promise<TransactionOutput> {
+    const transaction = await this.prisma.transaction.update({
+      where: { id },
+      data: dto,
+    });
+    return this.formatTransaction(transaction);
   }
 
-  async remove(id: string) {
-    return await this.prisma.transaction.delete({ where: { id } });
+  async remove(id: string): Promise<TransactionOutput> {
+    const transaction = await this.prisma.transaction.delete({ where: { id } });
+    return this.formatTransaction(transaction);
+  }
+
+  private formatTransaction(transaction: Transaction): TransactionOutput {
+    return {
+      ...transaction,
+      amount: Number(transaction.amount),
+    };
   }
 }
