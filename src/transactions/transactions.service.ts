@@ -69,8 +69,12 @@ export class TransactionsService {
   ): Promise<TransactionOutput> {
     const transaction = await this.prisma.transaction.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        date: dto.date ? new Date(dto.date) : undefined,
+      },
     });
+
     return this.formatTransaction(transaction);
   }
 
