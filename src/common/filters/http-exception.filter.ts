@@ -6,43 +6,52 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { ApiResponse } from '../dto/response.dto';
 import { BaseException } from '../exceptions/base.exception';
-import { Prisma } from '@prisma/client';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private prismaErrorMap: Record<string, { status: number; message: string }> = {
     P2025: { status: 404, message: 'Register not found' },
-    P2002: { status: 400, message: 'Single constraint violation' },
+    P2002: { status: 400, message: 'Unique constraint violation' },
   };
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    const defaultError = { status: HttpStatus.INTERNAL_SERVER_ERROR, message: 'Internal server error' };
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message = 'Internal server error';
 
-    const getPrismaError = (err: Prisma.PrismaClientKnownRequestError) =>
-      this.prismaErrorMap[err.code] ?? { status: 500, message: 'Database error' };
+    if (exception instanceof BaseException) {
+      status = exception.statusCode;
+      message = exception.message;
+    }
 
-    const exceptionMap: Record<string, () => { status: number; message: string }> = {
-      BaseException: () => ({ status: (exception as BaseException).statusCode, message: (exception as BaseException).message }),
-      HttpException: () => {
-        const res: any = (exception as HttpException).getResponse();
-        const message =
-          typeof res === 'object' && res.message
-            ? res.message.toString()
-            : (exception as HttpException).message;
-        return { status: (exception as HttpException).getStatus(), message };
-      },
-      PrismaClientKnownRequestError: () => getPrismaError(exception as Prisma.PrismaClientKnownRequestError),
-    };
+    else if (exception instanceof HttpException) {
+      const res: any = exception.getResponse();
+      message =
+        typeof res === 'object' && res.message
+          ? res.message.toString()
+          : exception.message;
+      status = exception.getStatus();
+    }
 
-    const exceptionKey = exception?.constructor?.name ?? 'Unknown';
-    const { status, message } = exceptionMap[exceptionKey] ? exceptionMap[exceptionKey]() : defaultError;
-  
-     const apiResponse: ApiResponse = {
+    else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      const prismaError = this.prismaErrorMap[exception.code] ?? {
+        status: 500,
+        message: 'Database error',
+      };
+      status = prismaError.status;
+      message = prismaError.message;
+    }
+
+    else if (exception instanceof Error) {
+      message = exception.message || message;
+    }
+
+    const apiResponse: ApiResponse = {
       payload: null,
       message,
       status,

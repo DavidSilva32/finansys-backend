@@ -11,7 +11,7 @@ import { TransactionOutput } from 'src/types/transaction-output';
 export class TransactionsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateTransactionDto): Promise<TransactionOutput> {
+  async create(dto: CreateTransactionDto & {userId: string}): Promise<TransactionOutput> {
     const dateISO = new Date(dto.date).toISOString();
     const transaction = await this.prisma.transaction.create({
       data: { ...dto, date: dateISO },

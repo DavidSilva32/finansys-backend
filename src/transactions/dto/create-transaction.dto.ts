@@ -29,7 +29,4 @@ export class CreateTransactionDto {
 
   @IsDateString()
   date: string;
-
-  @IsUUID()
-  userId: string;
 }
