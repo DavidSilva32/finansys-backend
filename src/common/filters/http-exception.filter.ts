@@ -41,7 +41,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const exceptionKey = exception?.constructor?.name ?? 'Unknown';
     const { status, message } = exceptionMap[exceptionKey] ? exceptionMap[exceptionKey]() : defaultError;
-
+  
      const apiResponse: ApiResponse = {
       payload: null,
       message,
