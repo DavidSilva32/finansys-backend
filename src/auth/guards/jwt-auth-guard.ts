@@ -26,16 +26,13 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      // Decodifica e valida o token
       const payload = this.jwtService.verify(token);
       
-      // Busca o usuário no banco
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user) {
         throw new UnauthorizedExceptionCustom('User not found');
       }
 
-      // Adiciona o usuário ao request para uso posterior
       request['user'] = user;
 
       return true;
